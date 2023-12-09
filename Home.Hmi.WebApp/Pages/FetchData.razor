@@ -1,0 +1,46 @@
+﻿@page "/fetchdata"
+@using Home.Services
+@inject HomeHeatingService HomeHeatingService
+
+<PageTitle>Weather forecast</PageTitle>
+
+<h1>Weather forecast</h1>
+
+<p>This component demonstrates fetching data from a service.</p>
+
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Room</th>
+            <th>Time</th>
+            <th>Value</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var dataPoint in HomeHeatingService.DataPoints)
+        {
+            <tr>
+                <td>@dataPoint.Name</td>
+                <td>@dataPoint.TimeStamp</td>
+                <td>@(dataPoint.FormattedValue ?? @"unknown")</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+
+@code {
+
+    protected override void OnInitialized()
+    {
+        HomeHeatingService.AnyDataChanged = OnAnyDataChanged;
+        
+    }
+
+    private void OnAnyDataChanged()
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+}
