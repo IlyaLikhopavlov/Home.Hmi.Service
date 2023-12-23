@@ -1,6 +1,7 @@
 ﻿using System.Net;
 using FluentModbus;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Quartz;
 
 namespace Home.Services

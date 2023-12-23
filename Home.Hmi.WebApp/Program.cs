@@ -1,4 +1,6 @@
+using System.Diagnostics;
 using FluentModbus;
+using Home.Common.Configuration;
 using Home.Hmi.WebApp.Data;
 using Home.Services;
 using Quartz;
@@ -29,14 +31,23 @@ builder.Services.AddQuartzHostedService(q => q.WaitForJobsToComplete = true);
 builder.Services.AddSingleton<HomeHeatingService>();
 builder.Services.AddSingleton<ModbusTcpClient>();
 
-//builder.Logging.AddConfiguration(
-//    builder.Configuration.GetSection("Logging"));
+var configuration =
+    new ConfigurationBuilder()
+        .AddJsonFile("appsettings.json", optional:true, reloadOnChange: true)
+        .Build();
+
+builder.Services.AddSingleton<IConfiguration>(configuration);
+//builder.Services.Configure<LoggingOptions>(configuration.GetSection(LoggingOptions.Logging));
+
+var loggingOptions = configuration.GetSection(LoggingOptions.Logging).Get<LoggingOptions>();
 
 builder.Logging.AddSerilog(
     new LoggerConfiguration()
-        .MinimumLevel.Information()
-        .MinimumLevel.Override("Microsoft", LogEventLevel.Error)
-        .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Error)
+        .MinimumLevel.Is(loggingOptions?.LogLevel.GetDefault() ?? LogEventLevel.Debug)
+        .MinimumLevel.Override(LogLevelOptions.MicrosoftName, 
+            loggingOptions?.LogLevel.GetMicrosoft() ?? LogEventLevel.Debug)
+        .MinimumLevel.Override(LogLevelOptions.MicrosoftAspNetCoreName, 
+            loggingOptions?.LogLevel.GetMicrosoftAspNetCore() ?? LogEventLevel.Debug)
         .WriteTo.File("hmi-web-service-.log", rollingInterval: RollingInterval.Day)
         .CreateLogger());
 
