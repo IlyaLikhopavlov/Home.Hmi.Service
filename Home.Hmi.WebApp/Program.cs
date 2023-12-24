@@ -37,7 +37,7 @@ var configuration =
         .Build();
 
 builder.Services.AddSingleton<IConfiguration>(configuration);
-//builder.Services.Configure<LoggingOptions>(configuration.GetSection(LoggingOptions.Logging));
+builder.Services.Configure<ModbusTcpServerOptions>(configuration.GetSection(ModbusTcpServerOptions.ModbusTcpServer));
 
 var loggingOptions = configuration.GetSection(LoggingOptions.Logging).Get<LoggingOptions>();
 

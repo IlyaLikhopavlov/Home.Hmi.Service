@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using FluentModbus;
+using Home.Common.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Quartz;
@@ -14,11 +15,16 @@ namespace Home.Services
 
         private readonly ILogger<PollModbusRegistresJob> _logger;
 
-        private const string ServerAddress = @"192.168.0.101";
+        private readonly ModbusTcpServerOptions _modbusTcpServerOptions;
 
-        public PollModbusRegistresJob(HomeHeatingService heatingService, ModbusTcpClient modbusTcpClient, ILogger<PollModbusRegistresJob> logger)
+        public PollModbusRegistresJob(
+            HomeHeatingService heatingService, 
+            ModbusTcpClient modbusTcpClient, 
+            IOptions<ModbusTcpServerOptions> options,
+            ILogger<PollModbusRegistresJob> logger)
         {
             _logger = logger;
+            _modbusTcpServerOptions = options.Value;
 
             _heatingService = heatingService;
             _modbusTcpClient = modbusTcpClient;
@@ -30,18 +36,20 @@ namespace Home.Services
 
             try
             {
-                _modbusTcpClient.Connect(IPAddress.Parse(ServerAddress));
+                _modbusTcpClient.Connect(
+                    new IPEndPoint(IPAddress.Parse(_modbusTcpServerOptions.IpAddress), 
+                        _modbusTcpServerOptions.Port));
                 if (_modbusTcpClient.IsConnected)
                 {
-                    _logger.LogInformation($@"Successfully connected to the server {ServerAddress}");
+                    _logger.LogInformation($@"Successfully connected to the server {_modbusTcpServerOptions.IpAddress}");
                     return;
                 }
 
-                _logger.LogError($@"Connection to the server {ServerAddress} failed");
+                _logger.LogError($@"Connection to the server {_modbusTcpServerOptions.IpAddress} failed");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $@"Connection to the server {ServerAddress} failed");
+                _logger.LogError(ex, $@"Connection to the server {_modbusTcpServerOptions.IpAddress} failed");
             }
         }
 
@@ -49,7 +57,11 @@ namespace Home.Services
         {
             try
             {
-                var registersData = _modbusTcpClient.ReadHoldingRegisters<byte>(0xFF, 8959, 12).ToArray();
+                var registersData = _modbusTcpClient
+                    .ReadHoldingRegisters<byte>(
+                        0xFF, 
+                        _modbusTcpServerOptions.ReadingHoldingRegisters.StartingAddress, 
+                        _modbusTcpServerOptions.ReadingHoldingRegisters.Count).ToArray();
                 _heatingService.UpdateData(registersData);
 
                 _logger.LogDebug("Reading data from Modbus client succeed.");
