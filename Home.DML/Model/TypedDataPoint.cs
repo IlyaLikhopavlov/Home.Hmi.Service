@@ -97,7 +97,7 @@ namespace Home.DML.Model
 
         public override string? FormattedValue => 
             Converter.TryGetValue(Type, out var converter) 
-                ? $"ERROR. Unsupported type {Type.Name}" 
-                : converter?.Invoke(IntValue);
+                ? converter.Invoke(IntValue) 
+                : $"ERROR. Unsupported type {Type.Name}";
     }
 }
