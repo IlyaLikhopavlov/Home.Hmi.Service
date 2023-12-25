@@ -2,6 +2,8 @@
 {
     public abstract class ModbusDataPoint
     {
+        protected const float Factor = 0.1f;
+
         protected byte[] DataArray;
 
         protected ModbusDataPoint(string name, ushort order)

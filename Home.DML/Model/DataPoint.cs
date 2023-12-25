@@ -2,8 +2,6 @@
 {
     public class DataPoint<T> : ModbusDataPoint
     {
-        private const float Factor = 0.1f;
-
         public DataPoint(string name, ushort order) : base(name, order)
         {
         }

@@ -10,6 +10,8 @@ namespace Home.DML.Model
     {
         public const float FloatAperture = 0.1f;
 
+        public const uint IntAperture = 1;
+
         public const byte RegisterBytesCount = 2;
     }
 }
