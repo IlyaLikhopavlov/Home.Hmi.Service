@@ -62,11 +62,11 @@
 
         private static readonly Dictionary<string, Type> StringToTypeCorrespondence = Converter.Keys.ToDictionary(x => x.Name, x => x);
 
-        public static Type RecognizeType(string typeName)
+        private static Type RecognizeType(string typeName)
         {
             if (!StringToTypeCorrespondence.TryGetValue(typeName, out var type))
             {
-                throw new ArgumentOutOfRangeException($"{nameof(typeName)} not recognized");
+                throw new ArgumentOutOfRangeException($"Type \"{typeName}\" not recognized");
             }
 
             return type;
@@ -76,9 +76,9 @@
 
         public float? Factor { get; }
 
-        public TypedDataPoint(string name, ushort order, Type type, float factor) : base(name, order)
+        public TypedDataPoint(string name, ushort order, string type, float factor) : base(name, order)
         {
-            Type = type;
+            Type = RecognizeType(type);
             Factor = factor;
         }
 

@@ -1,6 +1,9 @@
 ﻿using System.ComponentModel;
+using System.Net;
+using FluentModbus;
 using Home.Common.Configuration;
 using Home.DML.Model;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace Home.Services
@@ -9,19 +12,52 @@ namespace Home.Services
     {
         private readonly List<ModbusDataPoint> _dataPoints;
 
-        public HomeHeatingService(IOptions<ModbusTcpServerOptions> modbusTcpServerOptions)
+        private readonly ModbusTcpClient _modbusTcpClient;
+
+        private readonly ModbusTcpServerOptions _modbusTcpServerOptions;
+
+        private readonly ILogger<PollModbusRegistresJob> _logger;
+
+        public HomeHeatingService(
+            IOptions<ModbusTcpServerOptions> modbusTcpServerOptions, 
+            ModbusTcpClient modbusTcpClient, 
+            ILogger<PollModbusRegistresJob> logger)
         {
-            var a = modbusTcpServerOptions;
-            
+            _modbusTcpClient = modbusTcpClient;
+            _logger = logger;
+            _modbusTcpServerOptions = modbusTcpServerOptions.Value;
             _dataPoints =
                 modbusTcpServerOptions.Value.ReadingHoldingRegisters.Registers
                     .Select(x => 
-                        (ModbusDataPoint) new TypedDataPoint(x.Name, x.Order, TypedDataPoint.RecognizeType(x.Type), x.Factor.GetValueOrDefault()))
+                        (ModbusDataPoint) new TypedDataPoint(x.Name, x.Order, x.Type, x.Factor.GetValueOrDefault()))
                     .ToList();
             
             foreach (var modbusDataPoint in _dataPoints)
             {
                 modbusDataPoint.ValueChanged = OnAnyDataChanged;
+            }
+
+            if (_modbusTcpClient.IsConnected)
+            {
+                return;
+            }
+
+            try
+            {
+                _modbusTcpClient.Connect(
+                    new IPEndPoint(IPAddress.Parse(_modbusTcpServerOptions.IpAddress),
+                        _modbusTcpServerOptions.Port));
+                if (_modbusTcpClient.IsConnected)
+                {
+                    _logger.LogInformation($@"Successfully connected to the server {_modbusTcpServerOptions.IpAddress}");
+                    return;
+                }
+
+                _logger.LogError($@"Connection to the server {_modbusTcpServerOptions.IpAddress} failed");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $@"Connection to the server {_modbusTcpServerOptions.IpAddress} failed");
             }
         }
 
@@ -34,13 +70,30 @@ namespace Home.Services
 
         public IList<ModbusDataPoint> DataPoints => _dataPoints;
 
-        public void UpdateData(byte[] allData)
+        private void UpdateData(IEnumerable<byte> allData)
         {
             var dataChunks = allData.Chunk(Constants.RegisterBytesCount).ToArray();
 
             foreach (var modbusDataPoint in _dataPoints)
             {
                 modbusDataPoint.Data = dataChunks[modbusDataPoint.Order / Constants.RegisterBytesCount];
+            }
+        }
+
+        public void UpdateDataPoints()
+        {
+            try
+            {
+                var registersData = _modbusTcpClient
+                    .ReadHoldingRegisters<byte>(
+                        0xFF,
+                        _modbusTcpServerOptions.ReadingHoldingRegisters.StartingAddress,
+                        _modbusTcpServerOptions.ReadingHoldingRegisters.Count).ToArray();
+                UpdateData(registersData);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Reading data from Modbus client failed.");
             }
         }
     }
