@@ -1,39 +1,39 @@
 ﻿namespace Home.DML.Model
 {
-    public class DataPoint<T> : ModbusDataPoint
-    {
-        public DataPoint(string name, ushort order) : base(name, order)
-        {
-        }
+    //public class DataPoint<T> : ModbusDataPoint
+    //{
+    //    public DataPoint(string name, ushort order) : base(name, order)
+    //    {
+    //    }
 
-        private static bool IsFraction() => new[] { typeof(float), typeof(double) }.Any(t => t == typeof(T));
+    //    private static bool IsFraction() => new[] { typeof(float), typeof(double) }.Any(t => t == typeof(T));
 
-        public T Value => (T)Convert.ChangeType(IntValue * (IsFraction() ? Factor : 1.0f), typeof(T));
-            
-        public override byte[] Data
-        {
-            get => DataArray;
-            set
-            {
-                var newValue = ConstructInt(value);
-                var oldValue = IntValue;
+    //    public T Value => (T)Convert.ChangeType(IntValue * (IsFraction() ? Factor : 1.0f), typeof(T));
 
-                var isChanged =
-                    IsFraction()
-                        ? Math.Abs(newValue * Factor - oldValue * Factor) > Constants.FloatAperture
-                        : typeof(T) == typeof(bool) && newValue != oldValue;
+    //    public override byte[] Data
+    //    {
+    //        get => DataArray;
+    //        set
+    //        {
+    //            var newValue = ConstructInt(value);
+    //            var oldValue = IntValue;
 
-                if (!isChanged)
-                {
-                    return;
-                }
+    //            var isChanged =
+    //                IsFraction()
+    //                    ? Math.Abs(newValue * Factor - oldValue * Factor) > Constants.FloatAperture
+    //                    : typeof(T) == typeof(bool) && newValue != oldValue;
 
-                DataArray = value.ToArray();
-                TimeStamp = DateTime.Now;
-                ValueChanged?.Invoke();
-            }
-        }
+    //            if (!isChanged)
+    //            {
+    //                return;
+    //            }
 
-        public override string? FormattedValue => IsFraction() ? $"{Value:0.00}" : Value?.ToString();
-    }
+    //            DataArray = value.ToArray();
+    //            TimeStamp = DateTime.Now;
+    //            ValueChanged?.Invoke();
+    //        }
+    //    }
+
+    //    public override string? FormattedValue => IsFraction() ? $"{Value:0.00}" : Value?.ToString();
+    //}
 }

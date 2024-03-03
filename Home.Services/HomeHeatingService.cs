@@ -1,4 +1,7 @@
-﻿using Home.DML.Model;
+﻿using System.ComponentModel;
+using Home.Common.Configuration;
+using Home.DML.Model;
+using Microsoft.Extensions.Options;
 
 namespace Home.Services
 {
@@ -6,18 +9,16 @@ namespace Home.Services
     {
         private readonly List<ModbusDataPoint> _dataPoints;
 
-        public HomeHeatingService()
+        public HomeHeatingService(IOptions<ModbusTcpServerOptions> modbusTcpServerOptions)
         {
-            _dataPoints = new List<ModbusDataPoint>
-            {
-                new DataPoint<float>("Living Room Temperature (C)", 0),
-                new DataPoint<float>("Bed room Temperature (C)", 2),
-                new DataPoint<float>("Martin's room Temperature (C)", 4),
-                new DataPoint<float>("Study 2nd floor Temperature (C)", 6),
-                new DataPoint<bool>("Boiler control signal (On/Off)", 8),
-                new DataPoint<float>("Outdoor Temperature (C)", 10),
-            };
-
+            var a = modbusTcpServerOptions;
+            
+            _dataPoints =
+                modbusTcpServerOptions.Value.ReadingHoldingRegisters.Registers
+                    .Select(x => 
+                        (ModbusDataPoint) new TypedDataPoint(x.Name, x.Order, TypedDataPoint.RecognizeType(x.Type), x.Factor.GetValueOrDefault()))
+                    .ToList();
+            
             foreach (var modbusDataPoint in _dataPoints)
             {
                 modbusDataPoint.ValueChanged = OnAnyDataChanged;
