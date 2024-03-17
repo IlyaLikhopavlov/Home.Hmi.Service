@@ -8,6 +8,6 @@
 
         public int Port { get; set; }
 
-        public ReadingHoldingRegistersOptions ReadingHoldingRegisters { get; set;}
+        public required IEnumerable<ReadingHoldingRegistersOptions> ReadingHoldingRegisters { get; set;}
     }
 }

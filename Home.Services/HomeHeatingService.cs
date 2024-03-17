@@ -29,9 +29,15 @@ namespace Home.Services
             _logger = logger;
             _modbusTcpServerOptions = modbusTcpServerOptions.Value;
             _dataPoints =
-                modbusTcpServerOptions.Value.ReadingHoldingRegisters.Registers
+                modbusTcpServerOptions.Value.ReadingHoldingRegisters
+                    .SelectMany(x => x.Registers, (set, register) => new {set, register})
                     .Select(x => 
-                        (ModbusDataPoint) new TypedDataPoint(x.Name, x.Order, x.Type, x.Factor.GetValueOrDefault()))
+                        (ModbusDataPoint) new TypedDataPoint(
+                            x.register.Name, 
+                            x.register.Order, 
+                            x.register.Type, 
+                            x.register.Factor.GetValueOrDefault(), 
+                            x.set.StartingAddress))
                     .ToList();
             
             foreach (var modbusDataPoint in _dataPoints)
@@ -72,11 +78,11 @@ namespace Home.Services
 
         public IList<ModbusDataPoint> DataPoints => _dataPoints;
 
-        private void UpdateData(IEnumerable<byte> allData)
+        private void UpdateData(IEnumerable<byte> data, uint startingAddress)
         {
-            var dataChunks = allData.Chunk(Constants.RegisterBytesCount).ToArray();
+            var dataChunks = data.Chunk(Constants.RegisterBytesCount).ToArray();
 
-            foreach (var modbusDataPoint in _dataPoints)
+            foreach (var modbusDataPoint in _dataPoints.Where(x => x.StartingAddress == startingAddress))
             {
                 modbusDataPoint.Data = dataChunks[modbusDataPoint.Order / Constants.RegisterBytesCount];
             }
@@ -86,12 +92,17 @@ namespace Home.Services
         {
             try
             {
-                var registersData = _modbusTcpClient
-                    .ReadHoldingRegisters<byte>(
-                        UnitIdentifier,
-                        _modbusTcpServerOptions.ReadingHoldingRegisters.StartingAddress,
-                        _modbusTcpServerOptions.ReadingHoldingRegisters.Count).ToArray();
-                UpdateData(registersData);
+                foreach (var registersChunk in _modbusTcpServerOptions.ReadingHoldingRegisters)
+                {
+                    var registersData = _modbusTcpClient
+                        .ReadHoldingRegisters<byte>(
+                            UnitIdentifier,
+                            (int)registersChunk.StartingAddress,
+                            registersChunk.Count).ToArray();
+
+                    UpdateData(registersData, registersChunk.StartingAddress);
+                }
+                
             }
             catch (Exception ex)
             {

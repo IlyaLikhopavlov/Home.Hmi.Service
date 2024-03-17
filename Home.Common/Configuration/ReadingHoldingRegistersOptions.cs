@@ -10,10 +10,10 @@ namespace Home.Common.Configuration
     {
         public const string ReadingHoldingRegisters = nameof(ModbusTcpServerOptions.ReadingHoldingRegisters);
 
-        public int StartingAddress { get; set; }
+        public uint StartingAddress { get; set; }
 
         public int Count { get; set; }
 
-        public IEnumerable<Register> Registers { get; set; }
+        public required IEnumerable<Register> Registers { get; set; }
     }
 }

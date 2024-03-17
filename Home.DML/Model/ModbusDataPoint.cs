@@ -6,12 +6,13 @@ namespace Home.DML.Model
     {
         protected byte[] DataArray;
 
-        protected ModbusDataPoint(string name, ushort order)
+        protected ModbusDataPoint(string name, ushort order, uint startingAddress)
         {
             Name = name;
             Order = order;
             TimeStamp = DateTime.Now;
             DataArray = new byte[Constants.RegisterBytesCount];
+            StartingAddress = startingAddress;
         }
 
         public virtual byte[] Data
@@ -22,7 +23,7 @@ namespace Home.DML.Model
 
         public Action? ValueChanged;
 
-        public int IntValue
+        public short IntValue
         {
             get => ConstructInt(Data);
             set => Data = DeconstructInt(value);
@@ -34,7 +35,9 @@ namespace Home.DML.Model
 
         public ushort Order { get; }
 
-        protected static int ConstructInt(byte[] data)
+        public uint StartingAddress { get; }
+
+        protected static short ConstructInt(byte[] data)
         {
             if (data.Length > Constants.RegisterBytesCount)
             {
@@ -47,15 +50,9 @@ namespace Home.DML.Model
             return BitConverter.ToInt16(buffer);
         }
 
-        protected static byte[] DeconstructInt(int value)
+        protected static byte[] DeconstructInt(short value)
         {
             var result = BitConverter.GetBytes(value);
-
-            if (result.Length > Constants.RegisterBytesCount)
-            {
-                throw new InvalidOperationException("Unexpected length of byte array");
-            }
-
             Array.Reverse(result);
 
             return result;

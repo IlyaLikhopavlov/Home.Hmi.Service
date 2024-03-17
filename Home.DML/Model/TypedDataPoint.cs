@@ -76,7 +76,7 @@
 
         public float? Factor { get; }
 
-        public TypedDataPoint(string name, ushort order, string type, float factor) : base(name, order)
+        public TypedDataPoint(string name, ushort order, string type, float factor, uint startingAddress) : base(name, order, startingAddress)
         {
             Type = RecognizeType(type);
             Factor = factor;
@@ -90,7 +90,10 @@
                 var newValue = ConstructInt(value);
                 var oldValue = IntValue;
 
-                var isChanged = Math.Abs(newValue - oldValue) > Constants.IntAperture;
+                var isChanged = 
+                    Type == typeof(bool) 
+                        ? newValue != oldValue 
+                        : Math.Abs(newValue - oldValue) > Constants.IntAperture;
 
                 if (!isChanged)
                 {
