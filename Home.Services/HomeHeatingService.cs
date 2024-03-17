@@ -10,6 +10,8 @@ namespace Home.Services
 {
     public class HomeHeatingService
     {
+        private const int UnitIdentifier = 0xFF;
+        
         private readonly List<ModbusDataPoint> _dataPoints;
 
         private readonly ModbusTcpClient _modbusTcpClient;
@@ -86,7 +88,7 @@ namespace Home.Services
             {
                 var registersData = _modbusTcpClient
                     .ReadHoldingRegisters<byte>(
-                        0xFF,
+                        UnitIdentifier,
                         _modbusTcpServerOptions.ReadingHoldingRegisters.StartingAddress,
                         _modbusTcpServerOptions.ReadingHoldingRegisters.Count).ToArray();
                 UpdateData(registersData);
@@ -95,6 +97,22 @@ namespace Home.Services
             {
                 _logger.LogError(ex, "Reading data from Modbus client failed.");
             }
+        }
+
+        public void WriteSingleValue()
+        {
+            short value = 220;
+            var result = BitConverter.GetBytes(value);
+
+            if (result.Length > Constants.RegisterBytesCount)
+            {
+                throw new InvalidOperationException("Unexpected length of byte array");
+            }
+
+            Array.Reverse(result);
+
+
+            _modbusTcpClient.WriteSingleRegister(UnitIdentifier, 16384, result);
         }
     }
 }

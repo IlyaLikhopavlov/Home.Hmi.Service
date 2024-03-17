@@ -18,15 +18,16 @@
         </tr>
     </thead>
     <tbody>
-        @foreach (var dataPoint in HomeHeatingService.DataPoints)
-        {
-            <tr>
-                <td>@dataPoint.Name</td>
-                <td>@dataPoint.TimeStamp</td>
-                <td>@(dataPoint.FormattedValue ?? @"unknown")</td>
-            </tr>
-        }
+    @foreach (var dataPoint in HomeHeatingService.DataPoints)
+    {
+        <tr>
+            <td>@dataPoint.Name</td>
+            <td>@dataPoint.TimeStamp</td>
+            <td>@(dataPoint.FormattedValue ?? @"unknown")</td>
+        </tr>
+    }
     </tbody>
+    <button class="btn btn-primary" @onclick="SendValue">Click me</button>
 </table>
 
 
@@ -43,4 +44,8 @@
         InvokeAsync(StateHasChanged);
     }
 
+    void SendValue()
+    {
+        HomeHeatingService.WriteSingleValue();
+    }
 }
