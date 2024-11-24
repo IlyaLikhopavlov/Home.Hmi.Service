@@ -8,11 +8,28 @@
 
 <button class="btn btn-primary" @onclick="IncrementCount">Click me</button>
 
+<div class="rz-p-12 rz-text-align-center">
+    <RadzenStack Orientation="Orientation.Horizontal">
+        <RadzenStack>
+            <div>A <code>Temperature</code> type that implements <code>IFormattable</code>.  Value in Celsius: @value</div>
+            <RadzenNumeric TValue="float?" Format="F" @bind-Value=@value ConvertValue="ParseToTemperature" ShowUpDown="true"
+                           InputAttributes="@(new Dictionary<string, object>() { { "aria-label", "enter value" } })" />
+        </RadzenStack>
+    </RadzenStack>
+</div>
+
 @code {
     private int currentCount = 0;
 
     private void IncrementCount()
     {
         currentCount++;
+    }
+
+    float? value = 20.1f;
+
+    float? ParseToTemperature(string input)
+    {
+        return decimal.TryParse(input, out var val) ? (float)val : null;
     }
 }

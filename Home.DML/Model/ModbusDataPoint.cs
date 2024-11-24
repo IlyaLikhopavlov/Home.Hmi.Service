@@ -1,18 +1,18 @@
-﻿using static System.Runtime.InteropServices.JavaScript.JSType;
-
-namespace Home.DML.Model
+﻿namespace Home.DML.Model
 {
     public abstract class ModbusDataPoint
     {
         protected byte[] DataArray;
 
-        protected ModbusDataPoint(string name, ushort order, uint startingAddress)
+        protected ModbusDataPoint(string name, ushort order, uint startingAddress, uint address, string id)
         {
             Name = name;
             Order = order;
             TimeStamp = DateTime.Now;
             DataArray = new byte[Constants.RegisterBytesCount];
             StartingAddress = startingAddress;
+            Address = address;
+            Id = id;
         }
 
         public virtual byte[] Data
@@ -25,19 +25,23 @@ namespace Home.DML.Model
 
         public short IntValue
         {
-            get => ConstructInt(Data);
-            set => Data = DeconstructInt(value);
+            get => ConstructShort(Data);
+            set => Data = DeconstructShort(value);
         }
 
         public DateTime TimeStamp { get; protected set; }
 
+        public string Id { get; }
+        
         public string Name { get; }
 
         public ushort Order { get; }
 
         public uint StartingAddress { get; }
 
-        protected static short ConstructInt(byte[] data)
+        public uint Address { get; }
+
+        protected static short ConstructShort(byte[] data)
         {
             if (data.Length > Constants.RegisterBytesCount)
             {
@@ -50,7 +54,7 @@ namespace Home.DML.Model
             return BitConverter.ToInt16(buffer);
         }
 
-        protected static byte[] DeconstructInt(short value)
+        protected static byte[] DeconstructShort(short value)
         {
             var result = BitConverter.GetBytes(value);
             Array.Reverse(result);

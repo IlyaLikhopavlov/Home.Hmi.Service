@@ -12,7 +12,7 @@ namespace Home.Services
     {
         private const int UnitIdentifier = 0xFF;
         
-        private readonly List<ModbusDataPoint> _dataPoints;
+        private readonly Dictionary<string, ModbusDataPoint> _dataPoints;
 
         private readonly ModbusTcpClient _modbusTcpClient;
 
@@ -30,19 +30,22 @@ namespace Home.Services
             _modbusTcpServerOptions = modbusTcpServerOptions.Value;
             _dataPoints =
                 modbusTcpServerOptions.Value.ReadingHoldingRegisters
-                    .SelectMany(x => x.Registers, (set, register) => new {set, register})
-                    .Select(x => 
-                        (ModbusDataPoint) new TypedDataPoint(
-                            x.register.Name, 
-                            x.register.Order, 
-                            x.register.Type, 
-                            x.register.Factor.GetValueOrDefault(), 
-                            x.set.StartingAddress))
-                    .ToList();
+                    .SelectMany(x => x.Registers, (set, register) => new { set, register })
+                    .ToDictionary(
+                        x => x.register.Id, 
+                        x =>
+                            (ModbusDataPoint)new TypedDataPoint(
+                                x.register.Name,
+                                x.register.Order,
+                                x.register.Type,
+                                x.register.Factor.GetValueOrDefault(),
+                                x.set.StartingAddress,
+                                x.register.Address,
+                                x.register.Id));
             
             foreach (var modbusDataPoint in _dataPoints)
             {
-                modbusDataPoint.ValueChanged = OnAnyDataChanged;
+                modbusDataPoint.Value.ValueChanged = OnAnyDataChanged;
             }
 
             if (_modbusTcpClient.IsConnected)
@@ -76,13 +79,14 @@ namespace Home.Services
             AnyDataChanged?.Invoke();
         }
 
-        public IList<ModbusDataPoint> DataPoints => _dataPoints;
+        public IList<ModbusDataPoint> DataPoints => _dataPoints.Values.ToList();
 
         private void UpdateData(IEnumerable<byte> data, uint startingAddress)
         {
             var dataChunks = data.Chunk(Constants.RegisterBytesCount).ToArray();
 
-            foreach (var modbusDataPoint in _dataPoints.Where(x => x.StartingAddress == startingAddress))
+            foreach (var modbusDataPoint in 
+                     _dataPoints.Values.Where(x => x.StartingAddress == startingAddress))
             {
                 modbusDataPoint.Data = dataChunks[modbusDataPoint.Order / Constants.RegisterBytesCount];
             }
@@ -110,20 +114,36 @@ namespace Home.Services
             }
         }
 
-        public void WriteSingleValue()
+        public void WriteSingleValue(float value, string id)
         {
-            short value = 220;
-            var result = BitConverter.GetBytes(value);
+            //short value = 220;
+            //var result = BitConverter.GetBytes(value);
 
-            if (result.Length > Constants.RegisterBytesCount)
+            //if (result.Length > Constants.RegisterBytesCount)
+            //{
+            //    throw new InvalidOperationException("Unexpected length of byte array");
+            //}
+
+            //Array.Reverse(result);
+
+
+            //_modbusTcpClient.WriteSingleRegister(UnitIdentifier, 16384, result);
+            if (!_dataPoints.TryGetValue(id, out var dataPoint))
             {
-                throw new InvalidOperationException("Unexpected length of byte array");
+                return;
             }
 
-            Array.Reverse(result);
+            var typedDataPoint = (TypedDataPoint)dataPoint;
+            var dataToWrite = typedDataPoint.GetDataToWrite(value);
+            _modbusTcpClient.WriteSingleRegister(UnitIdentifier, (ushort)typedDataPoint.Address, dataToWrite);
+
+            //if (_dataPoints.First(x => x.Name == name) is TypedDataPoint typedDataPoint)
+            //{
+            //    var dataToWrite = typedDataPoint.GetDataToWrite(value);
+            //    typedDataPoint.
+            //}
 
 
-            _modbusTcpClient.WriteSingleRegister(UnitIdentifier, 16384, result);
         }
     }
 }

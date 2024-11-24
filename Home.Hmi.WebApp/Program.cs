@@ -4,6 +4,7 @@ using Home.Common.Configuration;
 using Home.Hmi.WebApp.Data;
 using Home.Services;
 using Quartz;
+using Radzen;
 using Serilog;
 using Serilog.Events;
 
@@ -38,6 +39,7 @@ var configuration =
 
 builder.Services.AddSingleton<IConfiguration>(configuration);
 builder.Services.Configure<ModbusTcpServerOptions>(configuration.GetSection(ModbusTcpServerOptions.ModbusTcpServer));
+builder.Services.AddRadzenComponents();
 
 var loggingOptions = configuration.GetSection(LoggingOptions.Logging).Get<LoggingOptions>();
 

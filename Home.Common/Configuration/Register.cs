@@ -8,7 +8,11 @@ namespace Home.Common.Configuration
 {
     public class Register
     {
+        public string Id { get; set; }
+        
         public string Name { get; set; }
+
+        public uint Address { get; set; }
 
         public ushort Order { get; set; }
 

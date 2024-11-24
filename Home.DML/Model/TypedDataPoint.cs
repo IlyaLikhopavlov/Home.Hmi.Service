@@ -76,7 +76,8 @@
 
         public float? Factor { get; }
 
-        public TypedDataPoint(string name, ushort order, string type, float factor, uint startingAddress) : base(name, order, startingAddress)
+        public TypedDataPoint(string name, ushort order, string type, float factor, uint startingAddress, uint address, string id) 
+            : base(name, order, startingAddress, address, id)
         {
             Type = RecognizeType(type);
             Factor = factor;
@@ -87,7 +88,7 @@
             get => DataArray;
             set
             {
-                var newValue = ConstructInt(value);
+                var newValue = ConstructShort(value);
                 var oldValue = IntValue;
 
                 var isChanged = 
@@ -104,6 +105,13 @@
                 TimeStamp = DateTime.Now;
                 ValueChanged?.Invoke();
             }
+        }
+
+        public byte[] GetDataToWrite(float value)
+        {
+            var intValue = (short) (value * (1 / Factor ?? 1));
+
+            return DeconstructShort(intValue);
         }
 
         public override string FormattedValue => 

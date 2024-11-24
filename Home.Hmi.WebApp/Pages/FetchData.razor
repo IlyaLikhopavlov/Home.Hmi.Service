@@ -1,5 +1,6 @@
 ﻿@page "/fetchdata"
 @using Home.Services
+@using Home.Services.ConstantValues
 @inject HomeHeatingService HomeHeatingService
 
 <PageTitle>Weather forecast</PageTitle>
@@ -18,7 +19,7 @@
         </tr>
     </thead>
     <tbody>
-    @foreach (var dataPoint in HomeHeatingService.DataPoints)
+    @foreach (var dataPoint in HomeHeatingService.DataPoints.Where(x=> DataPointIds.MonitoringPoints.Any(p => p == x.Id)))
     {
         <tr>
             <td>@dataPoint.Name</td>
@@ -27,12 +28,19 @@
         </tr>
     }
     </tbody>
-    <button class="btn btn-primary" @onclick="SendValue">Click me</button>
+    
+    @* <button class="btn btn-primary" @onclick="SendValue">Click me</button> *@
+    
 </table>
 
 
 @code {
 
+    private void GetData()
+    {
+
+    }
+    
     protected override void OnInitialized()
     {
         HomeHeatingService.AnyDataChanged = OnAnyDataChanged;
@@ -46,6 +54,6 @@
 
     void SendValue()
     {
-        HomeHeatingService.WriteSingleValue();
+        //HomeHeatingService.WriteSingleValue("a");
     }
 }
